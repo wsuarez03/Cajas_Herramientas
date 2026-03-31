@@ -272,6 +272,26 @@ dialog article {
   min-height: 6.5rem;
 }
 
+#resultShareLinkField {
+  resize: vertical;
+  min-height: 5.5rem;
+}
+
+.share-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.65rem;
+}
+
+.share-option-grid .btn-action,
+.share-option-grid button {
+  text-align: center;
+  justify-content: center;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
 menu {
   display: flex;
   justify-content: end;

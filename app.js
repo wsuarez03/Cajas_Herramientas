@@ -76,8 +76,85 @@ const ui = {
   toolDialog:      document.getElementById("toolDialog"),
   toolDialogForm:  document.getElementById("toolDialogForm"),
   newToolName:     document.getElementById("newToolName"),
-  cancelToolDialog:document.getElementById("cancelToolDialog")
+  cancelToolDialog:document.getElementById("cancelToolDialog"),
+  resultShareDialog: document.getElementById("resultShareDialog"),
+  resultShareLinkField: document.getElementById("resultShareLinkField"),
+  btnNativeShare: document.getElementById("btnNativeShare"),
+  btnWhatsappShare: document.getElementById("btnWhatsappShare"),
+  btnEmailShare: document.getElementById("btnEmailShare"),
+  btnCopyResultShareLink: document.getElementById("btnCopyResultShareLink"),
+  btnCloseResultShareDialog: document.getElementById("btnCloseResultShareDialog")
 };
+
+function encodeSharePayload(payload) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
+
+function decodeSharePayload(value) {
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(value))));
+  } catch {
+    return null;
+  }
+}
+
+function buildShareLinkFromBox(boxId, box) {
+  const payload = encodeSharePayload({
+    boxId,
+    workerName: box.workerName || "",
+    generalNotes: box.generalNotes || "",
+    tools: box.tools.map((tool) => ({
+      name: tool.name || "",
+      status: tool.status || "ok",
+      observation: tool.observation || ""
+    }))
+  });
+
+  const shareUrl = new URL("caja.html", window.location.href);
+  shareUrl.searchParams.set("box", boxId);
+  shareUrl.searchParams.set("mode", "ver");
+  shareUrl.searchParams.set("share", payload);
+  return shareUrl.toString();
+}
+
+function buildShareMessage(link) {
+  const box = getActiveBox();
+  const worker = box?.workerName ? ` de ${box.workerName}` : "";
+  return `Checklist guardado para ${state.activeBoxId}${worker}. Revise el detalle aqui: ${link}`;
+}
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+
+  return false;
+}
+
+function updateShareDialogOptions(link) {
+  const message = buildShareMessage(link);
+  const whatsappUrl = new URL("https://wa.me/");
+  whatsappUrl.searchParams.set("text", message);
+
+  ui.resultShareLinkField.value = link;
+  ui.resultShareDialog.dataset.link = link;
+  ui.resultShareDialog.dataset.message = message;
+  ui.btnWhatsappShare.href = whatsappUrl.toString();
+  ui.btnEmailShare.href = `mailto:?subject=${encodeURIComponent(`Checklist ${state.activeBoxId}`)}&body=${encodeURIComponent(message)}`;
+  ui.btnNativeShare.disabled = !(navigator.share && window.isSecureContext);
+}
+
+function openResultShareDialog() {
+  const box = getActiveBox();
+  if (!box) return;
+
+  const link = buildShareLinkFromBox(state.activeBoxId, box);
+  updateShareDialogOptions(link);
+  ui.resultShareDialog.showModal();
+}
 
 function loadState() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -89,14 +166,6 @@ function loadState() {
     }
   } catch {
     state.boxes = {};
-  }
-}
-
-function decodeSharePayload(value) {
-  try {
-    return JSON.parse(decodeURIComponent(escape(atob(value))));
-  } catch {
-    return null;
   }
 }
 
@@ -377,7 +446,7 @@ function saveChecklist() {
 
   persistActiveBox();
   renderHistory();
-  alert(state.sharedView ? "Checklist guardado en este dispositivo." : "Checklist guardado correctamente.");
+  openResultShareDialog();
 }
 
 function resetCurrentStatus() {
@@ -497,6 +566,39 @@ function setupEvents() {
     persistActiveBox();
     renderPageHeader();
     alert("Nombre guardado.");
+  });
+
+  ui.btnCloseResultShareDialog.addEventListener("click", () => {
+    ui.resultShareDialog.close();
+  });
+
+  ui.btnCopyResultShareLink.addEventListener("click", async () => {
+    const link = ui.resultShareDialog.dataset.link || ui.resultShareLinkField.value;
+    if (!link) return;
+
+    const copied = await copyText(link);
+    if (copied) {
+      alert("Enlace copiado al portapapeles.");
+      return;
+    }
+
+    ui.resultShareLinkField.focus();
+    ui.resultShareLinkField.select();
+    window.prompt("Copie este enlace para compartir el checklist:", link);
+  });
+
+  ui.btnNativeShare.addEventListener("click", async () => {
+    const link = ui.resultShareDialog.dataset.link;
+    const message = ui.resultShareDialog.dataset.message;
+    if (!link || !navigator.share) return;
+
+    try {
+      await navigator.share({
+        title: `Checklist ${state.activeBoxId}`,
+        text: message,
+        url: link
+      });
+    } catch {}
   });
 }
 
