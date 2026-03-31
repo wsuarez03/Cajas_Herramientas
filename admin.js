@@ -2,6 +2,7 @@ const STORAGE_KEY = "herramienta-cajas-v1";
 const SESSION_KEY = "hc-auth";
 const ADMIN_USER = "admin";
 const ADMIN_PASS = "Admin123*";
+const QR_API_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 
 const predefinedBoxes = {
   "caja-5": {
@@ -115,6 +116,24 @@ function buildShareLink(id) {
   return shareUrl.toString();
 }
 
+function buildShareQrUrl(link) {
+  const qrUrl = new URL(QR_API_BASE);
+  qrUrl.searchParams.set("size", "280x280");
+  qrUrl.searchParams.set("data", link);
+  return qrUrl.toString();
+}
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+
+  return false;
+}
+
 async function shareBox(id) {
   const link = buildShareLink(id);
   if (!link) {
@@ -122,15 +141,21 @@ async function shareBox(id) {
     return;
   }
 
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(link);
-      alert("Enlace copiado al portapapeles.");
-      return;
-    }
-  } catch {}
+  const shareDialog = document.getElementById("shareDialog");
+  const shareQrImage = document.getElementById("shareQrImage");
+  const shareLinkField = document.getElementById("shareLinkField");
+  const openLink = document.getElementById("btnOpenShareLink");
 
-  window.prompt("Copie este enlace para compartir la caja:", link);
+  shareLinkField.value = link;
+  shareQrImage.src = buildShareQrUrl(link);
+  openLink.href = link;
+  shareDialog.dataset.link = link;
+  shareDialog.showModal();
+
+  const copied = await copyText(link);
+  if (copied) {
+    alert("Enlace copiado al portapapeles y QR generado.");
+  }
 }
 
 function checkAuth() {
@@ -309,6 +334,10 @@ function init() {
   const newBoxDialog = document.getElementById("newBoxDialog");
   const newBoxForm = document.getElementById("newBoxForm");
   const cancelNewBox = document.getElementById("cancelNewBox");
+  const shareDialog = document.getElementById("shareDialog");
+  const btnCopyShareLink = document.getElementById("btnCopyShareLink");
+  const btnCloseShareDialog = document.getElementById("btnCloseShareDialog");
+  const shareLinkField = document.getElementById("shareLinkField");
 
   loginForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -344,6 +373,23 @@ function init() {
   });
 
   cancelNewBox.addEventListener("click", () => newBoxDialog.close());
+
+  btnCloseShareDialog.addEventListener("click", () => shareDialog.close());
+
+  btnCopyShareLink.addEventListener("click", async () => {
+    const link = shareDialog.dataset.link || shareLinkField.value;
+    if (!link) return;
+
+    const copied = await copyText(link);
+    if (copied) {
+      alert("Enlace copiado al portapapeles.");
+      return;
+    }
+
+    shareLinkField.focus();
+    shareLinkField.select();
+    window.prompt("Copie este enlace para compartir la caja:", link);
+  });
 
   newBoxForm.addEventListener("submit", (e) => {
     e.preventDefault();

@@ -74,6 +74,25 @@
     </form>
   </dialog>
 
+  <dialog id="shareDialog">
+    <article class="share-dialog-content">
+      <h3>Compartir caja</h3>
+      <p class="muted">Comparta este enlace o el codigo QR con el trabajador.</p>
+      <div class="share-qr-wrap">
+        <img id="shareQrImage" alt="Codigo QR de la caja" />
+      </div>
+      <label>
+        Enlace publico
+        <textarea id="shareLinkField" rows="4" readonly></textarea>
+      </label>
+      <div class="actions">
+        <button id="btnCopyShareLink" type="button">Copiar enlace</button>
+        <a id="btnOpenShareLink" class="btn-action btn-ver" target="_blank" rel="noopener">Abrir enlace</a>
+        <button id="btnCloseShareDialog" type="button" class="ghost">Cerrar</button>
+      </div>
+    </article>
+  </dialog>
+
   <script src="admin.js"></script>
 </body>
 </html>

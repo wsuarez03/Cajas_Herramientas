@@ -1,4 +1,5 @@
 const STORAGE_KEY = "herramienta-cajas-v1";
+const SHARED_STORAGE_PREFIX = "herramienta-cajas-shared-v1";
 
 const defaultTools = [
   "Martillo",
@@ -51,7 +52,8 @@ const state = {
   pageMode: "ver",   // "ver" | "editar"
   boxes: {},
   validationMode: false,
-  sharedView: false
+  sharedView: false,
+  sharedStorageKey: ""
 };
 
 const ui = {
@@ -106,6 +108,22 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
 }
 
+function buildSharedStorageKey(boxId, shareParam) {
+  return `${SHARED_STORAGE_PREFIX}:${boxId}:${shareParam}`;
+}
+
+function persistActiveBox() {
+  const box = getActiveBox();
+  if (!box) return;
+
+  if (state.sharedView && state.sharedStorageKey) {
+    localStorage.setItem(state.sharedStorageKey, JSON.stringify(box));
+    return;
+  }
+
+  saveState();
+}
+
 function getActiveBox() {
   return state.boxes[state.activeBoxId];
 }
@@ -115,7 +133,7 @@ function renderPageHeader() {
   const worker = box ? (box.workerName || "Sin propietario") : "—";
   let modeLabel = state.pageMode === "editar" ? " · Edicion" : " · Vista";
   if (state.sharedView) {
-    modeLabel = " · Enlace compartido";
+    modeLabel = state.validationMode ? " · Checklist compartido" : " · Enlace compartido";
   }
 
   ui.pageTitle.textContent = state.activeBoxId ? state.activeBoxId.toUpperCase() : "CAJA";
@@ -185,7 +203,7 @@ function renderTools() {
         const toolName = box.tools[idx].name;
         if (confirm(`¿Eliminar "${toolName}" del listado?`)) {
           box.tools.splice(idx, 1);
-          saveState();
+          persistActiveBox();
           renderTools();
         }
       });
@@ -227,19 +245,21 @@ function render() {
 
   const box = getActiveBox();
   const isEditar = state.pageMode === "editar";
-  const isReadOnlyShare = state.sharedView;
+  const isShared = state.sharedView;
 
   // Boton validar
   if (ui.btnValidate) {
     ui.btnValidate.textContent = state.validationMode ? "Ver listado" : "Validar";
     ui.btnValidate.classList.toggle("active", state.validationMode);
-    ui.btnValidate.disabled = !box || isReadOnlyShare;
-    ui.btnValidate.classList.toggle("hidden", isReadOnlyShare);
+    ui.btnValidate.disabled = !box;
+    ui.btnValidate.classList.remove("hidden");
   }
 
   if (ui.validateHint) {
-    if (isReadOnlyShare) {
-      ui.validateHint.textContent = "Este enlace compartido muestra una copia del listado de la caja.";
+    if (isShared) {
+      ui.validateHint.textContent = state.validationMode
+        ? "Complete el checklist y guarde el resultado en este dispositivo."
+        : "Este enlace compartido permite validar las herramientas sin iniciar sesion.";
     } else {
       ui.validateHint.textContent = state.validationMode
         ? "Modo checklist activo: seleccione OK / No OK y agregue observaciones."
@@ -248,16 +268,16 @@ function render() {
   }
 
   // Agregar herramienta: siempre visible en editar; oculto en ver cuando hay checklist activo
-  ui.btnAddTool.disabled = !box || isReadOnlyShare;
-  ui.btnAddTool.classList.toggle("hidden", isReadOnlyShare || (!isEditar && state.validationMode));
+  ui.btnAddTool.disabled = !box || isShared;
+  ui.btnAddTool.classList.toggle("hidden", isShared || (!isEditar && state.validationMode));
 
   // Notas y acciones: solo en modo checklist
-  ui.notesLabel.classList.toggle("hidden", isReadOnlyShare || !state.validationMode);
-  ui.actionsBar.classList.toggle("hidden", isReadOnlyShare || !state.validationMode);
+  ui.notesLabel.classList.toggle("hidden", !state.validationMode);
+  ui.actionsBar.classList.toggle("hidden", !state.validationMode);
 
   // Tarjeta edicion propietario: solo en editar
-  ui.editWorkerCard.classList.toggle("hidden", isReadOnlyShare || !isEditar);
-  if (!isReadOnlyShare && isEditar && box) {
+  ui.editWorkerCard.classList.toggle("hidden", isShared || !isEditar);
+  if (!isShared && isEditar && box) {
     ui.workerName.value = box.workerName || "";
   }
 
@@ -294,7 +314,19 @@ function loadSharedBoxFromUrl(boxId, shareParam) {
     return false;
   }
 
-  state.boxes[boxId] = {
+  state.sharedStorageKey = buildSharedStorageKey(boxId, shareParam);
+
+  let sharedBox = null;
+  const storedShared = localStorage.getItem(state.sharedStorageKey);
+  if (storedShared) {
+    try {
+      sharedBox = JSON.parse(storedShared);
+    } catch {
+      sharedBox = null;
+    }
+  }
+
+  state.boxes[boxId] = sharedBox || {
     workerName: payload.workerName || "",
     generalNotes: payload.generalNotes || "",
     tools: payload.tools.map((tool) => ({
@@ -343,9 +375,9 @@ function saveChecklist() {
     }))
   });
 
-  saveState();
+  persistActiveBox();
   renderHistory();
-  alert("Checklist guardado correctamente.");
+  alert(state.sharedView ? "Checklist guardado en este dispositivo." : "Checklist guardado correctamente.");
 }
 
 function resetCurrentStatus() {
@@ -359,7 +391,7 @@ function resetCurrentStatus() {
   }));
   box.generalNotes = "";
 
-  saveState();
+  persistActiveBox();
   render();
 }
 
@@ -452,7 +484,7 @@ function setupEvents() {
     if (!name) return;
 
     box.tools.push({ name, status: "ok", observation: "" });
-    saveState();
+    persistActiveBox();
     renderTools();
     ui.toolDialog.close();
   });
@@ -462,7 +494,7 @@ function setupEvents() {
     const box = getActiveBox();
     if (!box) return;
     box.workerName = ui.workerName.value.trim();
-    saveState();
+    persistActiveBox();
     renderPageHeader();
     alert("Nombre guardado.");
   });
@@ -491,6 +523,7 @@ async function init() {
   const boxId = rawBox.trim().toLowerCase().replace(/\s+/g, "-");
   state.pageMode = params.get("mode") === "editar" ? "editar" : "ver";
   state.sharedView = false;
+  state.sharedStorageKey = "";
 
   await disableServiceWorker();
 
