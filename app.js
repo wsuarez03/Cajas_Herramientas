@@ -106,8 +106,10 @@ function renderPageHeader() {
   const worker = box ? (box.workerName || "Sin propietario") : "—";
   const modeLabel = state.pageMode === "editar" ? " · Edicion" : " · Vista";
 
-  ui.pageTitle.textContent = state.activeBoxId.toUpperCase();
-  ui.pageSubtitle.textContent = "Propietario: " + worker + modeLabel;
+  ui.pageTitle.textContent = state.activeBoxId ? state.activeBoxId.toUpperCase() : "CAJA";
+  ui.pageSubtitle.textContent = box
+    ? "Propietario: " + worker + modeLabel
+    : "Abra esta pagina con un enlace valido de caja.";
 }
 
 function renderTools() {
@@ -424,20 +426,33 @@ function setupEvents() {
   });
 }
 
-function registerServiceWorker() {
+async function disableServiceWorker() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    try {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map((registration) => registration.unregister()));
+    } catch {}
+  }
+
+  if ("caches" in window) {
+    try {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    } catch {}
   }
 }
 
-function init() {
+async function init() {
   const params = new URL(window.location.href).searchParams;
   const rawBox = params.get("box") || "";
   const boxId = rawBox.trim().toLowerCase().replace(/\s+/g, "-");
   state.pageMode = params.get("mode") === "editar" ? "editar" : "ver";
 
+  await disableServiceWorker();
+
   if (!boxId) {
-    window.location.href = "index.html";
+    state.activeBoxId = "";
+    render();
     return;
   }
 
@@ -445,7 +460,6 @@ function init() {
   createOrLoadBox(boxId);
   setupEvents();
   render();
-  registerServiceWorker();
 }
 
 init();
