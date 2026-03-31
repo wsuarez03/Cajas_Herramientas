@@ -249,47 +249,24 @@ dialog article {
   width: min(92vw, 520px);
 }
 
-.share-qr-wrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0.75rem;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #f6fbfc, #eef4fb);
-  border: 1px solid var(--border);
-}
-
-.share-qr-wrap img {
-  width: min(100%, 280px);
-  height: auto;
-  display: block;
-  background: #fff;
-  border-radius: 10px;
-}
-
 #shareLinkField {
   resize: vertical;
   min-height: 6.5rem;
 }
 
-#resultShareLinkField {
-  resize: vertical;
-  min-height: 5.5rem;
-}
-
-.share-option-grid {
+.pdf-btn-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 0.65rem;
 }
 
-.share-option-grid .btn-action,
-.share-option-grid button {
+.pdf-btn-grid button {
   text-align: center;
   justify-content: center;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
+  width: 100%;
 }
 
 menu {

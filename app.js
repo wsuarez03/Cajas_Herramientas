@@ -76,19 +76,8 @@ const ui = {
   toolDialog:      document.getElementById("toolDialog"),
   toolDialogForm:  document.getElementById("toolDialogForm"),
   newToolName:     document.getElementById("newToolName"),
-  cancelToolDialog:document.getElementById("cancelToolDialog"),
-  resultShareDialog: document.getElementById("resultShareDialog"),
-  resultShareLinkField: document.getElementById("resultShareLinkField"),
-  btnNativeShare: document.getElementById("btnNativeShare"),
-  btnWhatsappShare: document.getElementById("btnWhatsappShare"),
-  btnEmailShare: document.getElementById("btnEmailShare"),
-  btnCopyResultShareLink: document.getElementById("btnCopyResultShareLink"),
-  btnCloseResultShareDialog: document.getElementById("btnCloseResultShareDialog")
+  cancelToolDialog:document.getElementById("cancelToolDialog")
 };
-
-function encodeSharePayload(payload) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-}
 
 function decodeSharePayload(value) {
   try {
@@ -98,62 +87,93 @@ function decodeSharePayload(value) {
   }
 }
 
-function buildShareLinkFromBox(boxId, box) {
-  const payload = encodeSharePayload({
-    boxId,
-    workerName: box.workerName || "",
-    generalNotes: box.generalNotes || "",
-    tools: box.tools.map((tool) => ({
-      name: tool.name || "",
-      status: tool.status || "ok",
-      observation: tool.observation || ""
-    }))
+function buildPdfDoc() {
+  const box = getActiveBox();
+  if (!box) return null;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const date = new Date().toLocaleString("es-CO");
+  const worker = box.workerName || "Sin propietario";
+  const boxId = state.activeBoxId.toUpperCase();
+
+  doc.setFontSize(16);
+  doc.setFont(undefined, "bold");
+  doc.text("CONTROL DE HERRAMIENTAS", 105, 20, { align: "center" });
+  doc.setFontSize(10);
+  doc.setFont(undefined, "normal");
+  doc.text(`Caja: ${boxId}`, 14, 32);
+  doc.text(`Propietario: ${worker}`, 14, 38);
+  doc.text(`Fecha: ${date}`, 14, 44);
+
+  const rows = box.tools.map((tool, i) => [
+    i + 1,
+    tool.name,
+    tool.status === "ok" ? "OK" : "NO OK",
+    tool.observation || ""
+  ]);
+
+  doc.autoTable({
+    startY: 52,
+    head: [["#", "Herramienta", "Estado", "Observación"]],
+    body: rows,
+    styles: { fontSize: 9, cellPadding: 3 },
+    headStyles: { fillColor: [15, 76, 92], textColor: 255 },
+    columnStyles: {
+      0: { cellWidth: 12 },
+      1: { cellWidth: 90 },
+      2: { cellWidth: 25 },
+      3: { cellWidth: 55 }
+    }
   });
 
-  const shareUrl = new URL("caja.html", window.location.href);
-  shareUrl.searchParams.set("box", boxId);
-  shareUrl.searchParams.set("mode", "ver");
-  shareUrl.searchParams.set("share", payload);
-  return shareUrl.toString();
+  let finalY = doc.lastAutoTable.finalY + 10;
+  if (box.generalNotes) {
+    doc.setFontSize(10);
+    doc.setFont(undefined, "bold");
+    doc.text("Observaciones generales:", 14, finalY);
+    finalY += 6;
+    doc.setFont(undefined, "normal");
+    const lines = doc.splitTextToSize(box.generalNotes, 180);
+    doc.text(lines, 14, finalY);
+  }
+
+  return doc;
 }
 
-function buildShareMessage(link) {
-  const box = getActiveBox();
-  const worker = box?.workerName ? ` de ${box.workerName}` : "";
-  return `Checklist guardado para ${state.activeBoxId}${worker}. Revise el detalle aqui: ${link}`;
+function getPdfFileName() {
+  return `${state.activeBoxId}-checklist-${new Date().toISOString().slice(0, 10)}.pdf`;
 }
 
-async function copyText(text) {
-  try {
-    if (navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text);
-      return true;
+async function downloadPdf() {
+  const doc = buildPdfDoc();
+  if (!doc) return;
+  doc.save(getPdfFileName());
+}
+
+async function sharePdf() {
+  const doc = buildPdfDoc();
+  if (!doc) return;
+  const fileName = getPdfFileName();
+
+  if (navigator.canShare) {
+    const blob = doc.output("blob");
+    const file = new File([blob], fileName, { type: "application/pdf" });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `Checklist ${state.activeBoxId}` });
+        return;
+      } catch {}
     }
-  } catch {}
+  }
 
-  return false;
+  doc.save(fileName);
+  alert("PDF descargado. Puede adjuntarlo y enviarlo por WhatsApp, correo u otra app.");
 }
 
-function updateShareDialogOptions(link) {
-  const message = buildShareMessage(link);
-  const whatsappUrl = new URL("https://wa.me/");
-  whatsappUrl.searchParams.set("text", message);
-
-  ui.resultShareLinkField.value = link;
-  ui.resultShareDialog.dataset.link = link;
-  ui.resultShareDialog.dataset.message = message;
-  ui.btnWhatsappShare.href = whatsappUrl.toString();
-  ui.btnEmailShare.href = `mailto:?subject=${encodeURIComponent(`Checklist ${state.activeBoxId}`)}&body=${encodeURIComponent(message)}`;
-  ui.btnNativeShare.disabled = !(navigator.share && window.isSecureContext);
-}
-
-function openResultShareDialog() {
-  const box = getActiveBox();
-  if (!box) return;
-
-  const link = buildShareLinkFromBox(state.activeBoxId, box);
-  updateShareDialogOptions(link);
-  ui.resultShareDialog.showModal();
+function openPdfDialog() {
+  const dlg = document.getElementById("pdfDialog");
+  if (dlg) dlg.showModal();
 }
 
 function loadState() {
@@ -446,7 +466,7 @@ function saveChecklist() {
 
   persistActiveBox();
   renderHistory();
-  openResultShareDialog();
+  openPdfDialog();
 }
 
 function resetCurrentStatus() {
@@ -568,37 +588,10 @@ function setupEvents() {
     alert("Nombre guardado.");
   });
 
-  ui.btnCloseResultShareDialog.addEventListener("click", () => {
-    ui.resultShareDialog.close();
-  });
-
-  ui.btnCopyResultShareLink.addEventListener("click", async () => {
-    const link = ui.resultShareDialog.dataset.link || ui.resultShareLinkField.value;
-    if (!link) return;
-
-    const copied = await copyText(link);
-    if (copied) {
-      alert("Enlace copiado al portapapeles.");
-      return;
-    }
-
-    ui.resultShareLinkField.focus();
-    ui.resultShareLinkField.select();
-    window.prompt("Copie este enlace para compartir el checklist:", link);
-  });
-
-  ui.btnNativeShare.addEventListener("click", async () => {
-    const link = ui.resultShareDialog.dataset.link;
-    const message = ui.resultShareDialog.dataset.message;
-    if (!link || !navigator.share) return;
-
-    try {
-      await navigator.share({
-        title: `Checklist ${state.activeBoxId}`,
-        text: message,
-        url: link
-      });
-    } catch {}
+  document.getElementById("btnDownloadPdf").addEventListener("click", downloadPdf);
+  document.getElementById("btnSharePdf").addEventListener("click", sharePdf);
+  document.getElementById("btnClosePdfDialog").addEventListener("click", () => {
+    document.getElementById("pdfDialog").close();
   });
 }
 

@@ -2,7 +2,6 @@ const STORAGE_KEY = "herramienta-cajas-v1";
 const SESSION_KEY = "hc-auth";
 const ADMIN_USER = "admin";
 const ADMIN_PASS = "Admin123*";
-const QR_API_BASE = "https://api.qrserver.com/v1/create-qr-code/";
 
 const predefinedBoxes = {
   "caja-5": {
@@ -116,13 +115,6 @@ function buildShareLink(id) {
   return shareUrl.toString();
 }
 
-function buildShareQrUrl(link) {
-  const qrUrl = new URL(QR_API_BASE);
-  qrUrl.searchParams.set("size", "280x280");
-  qrUrl.searchParams.set("data", link);
-  return qrUrl.toString();
-}
-
 async function copyText(text) {
   try {
     if (navigator.clipboard && window.isSecureContext) {
@@ -142,19 +134,17 @@ async function shareBox(id) {
   }
 
   const shareDialog = document.getElementById("shareDialog");
-  const shareQrImage = document.getElementById("shareQrImage");
   const shareLinkField = document.getElementById("shareLinkField");
   const openLink = document.getElementById("btnOpenShareLink");
 
   shareLinkField.value = link;
-  shareQrImage.src = buildShareQrUrl(link);
   openLink.href = link;
   shareDialog.dataset.link = link;
   shareDialog.showModal();
 
   const copied = await copyText(link);
   if (copied) {
-    alert("Enlace copiado al portapapeles y QR generado.");
+    alert("Enlace copiado al portapapeles.");
   }
 }
 

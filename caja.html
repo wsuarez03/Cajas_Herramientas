@@ -83,26 +83,22 @@
     </form>
   </dialog>
 
-  <dialog id="resultShareDialog">
+  <dialog id="pdfDialog">
     <article class="share-dialog-content">
-      <h3>Compartir checklist</h3>
-      <p class="muted">Elija la forma de compartir el estado guardado de esta caja.</p>
-      <label>
-        Enlace compartible
-        <textarea id="resultShareLinkField" rows="4" readonly></textarea>
-      </label>
-      <div class="share-option-grid">
-        <button id="btnNativeShare" type="button">Compartir</button>
-        <a id="btnWhatsappShare" class="btn-action btn-share" target="_blank" rel="noopener">WhatsApp</a>
-        <a id="btnEmailShare" class="btn-action btn-ver">Correo</a>
-        <button id="btnCopyResultShareLink" type="button" class="ghost">Copiar enlace</button>
+      <h3>Checklist guardado</h3>
+      <p class="muted">El checklist se guardó correctamente. Descargue o comparta el PDF.</p>
+      <div class="pdf-btn-grid">
+        <button id="btnDownloadPdf" type="button">Descargar PDF</button>
+        <button id="btnSharePdf" type="button" class="ghost">Compartir PDF</button>
       </div>
       <div class="actions">
-        <button id="btnCloseResultShareDialog" type="button" class="ghost">Cerrar</button>
+        <button id="btnClosePdfDialog" type="button" class="ghost">Cerrar</button>
       </div>
     </article>
   </dialog>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
