@@ -296,6 +296,20 @@ function renderTools() {
     }
 
     ui.toolList.appendChild(wrap);
+
+    if (state.validationMode) {
+      // iOS Safari can ignore dynamic checked attributes from innerHTML.
+      // Set the checked property explicitly for consistent rendering.
+      const okRadio = wrap.querySelector(`input[name="status-${index}"][value="ok"]`);
+      const noOkRadio = wrap.querySelector(`input[name="status-${index}"][value="no-ok"]`);
+      const isNoOk = tool.status === "no-ok";
+      if (okRadio) {
+        okRadio.checked = !isNoOk;
+      }
+      if (noOkRadio) {
+        noOkRadio.checked = isNoOk;
+      }
+    }
   });
 
   // Botones eliminar (modo editar, fuera de checklist)
