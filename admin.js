@@ -222,11 +222,8 @@ function init() {
   const bxParam = params.get("box");
   if (bxParam) {
     const dest = `caja.html?box=${encodeURIComponent(bxParam)}&mode=ver`;
-    if (checkAuth()) {
-      window.location.href = dest;
-      return;
-    }
-    sessionStorage.setItem("hc-redirect", dest);
+    window.location.href = dest;
+    return;
   }
 
   const loginForm = document.getElementById("loginForm");

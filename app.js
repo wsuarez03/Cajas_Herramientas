@@ -1,5 +1,4 @@
 const STORAGE_KEY = "herramienta-cajas-v1";
-const SESSION_KEY = "hc-auth";
 
 const defaultTools = [
   "Martillo",
@@ -432,12 +431,6 @@ function registerServiceWorker() {
 }
 
 function init() {
-  // Verificar sesion
-  if (sessionStorage.getItem(SESSION_KEY) !== "1") {
-    window.location.href = "index.html";
-    return;
-  }
-
   const params = new URL(window.location.href).searchParams;
   const rawBox = params.get("box") || "";
   const boxId = rawBox.trim().toLowerCase().replace(/\s+/g, "-");
