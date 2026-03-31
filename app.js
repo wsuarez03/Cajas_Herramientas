@@ -47,6 +47,15 @@ const predefinedBoxes = {
   }
 };
 
+async function loadBoxesJson() {
+  try {
+    const res = await fetch("./boxes.json?v=" + Date.now());
+    if (!res.ok) return;
+    const data = await res.json();
+    Object.assign(predefinedBoxes, data);
+  } catch {}
+}
+
 const state = {
   activeBoxId: "",
   pageMode: "ver",   // "ver" | "editar"
@@ -644,6 +653,7 @@ async function init() {
   state.sharedStorageKey = "";
 
   await disableServiceWorker();
+  await loadBoxesJson();
 
   if (!boxId) {
     state.activeBoxId = "";

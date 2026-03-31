@@ -64,6 +64,18 @@ function normalizeBoxId(value) {
   return (value || "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
+const publishedBoxIds = new Set();
+
+async function loadPublishedBoxIds() {
+  try {
+    const res = await fetch("./boxes.json?v=" + Date.now());
+    if (!res.ok) return;
+    const data = await res.json();
+    Object.keys(data).forEach(id => publishedBoxIds.add(id));
+    Object.assign(predefinedBoxes, data);
+  } catch {}
+}
+
 function encodeSharePayload(payload) {
   return LZString.compressToEncodedURIComponent(JSON.stringify(payload));
 }
@@ -98,6 +110,15 @@ function getBoxForShare(id) {
 }
 
 function buildShareLink(id) {
+  // Si la caja está publicada en boxes.json → URL corta (sin datos codificados)
+  if (publishedBoxIds.has(id)) {
+    const url = new URL("caja.html", window.location.href);
+    url.searchParams.set("box", id);
+    url.searchParams.set("mode", "ver");
+    return url.toString();
+  }
+
+  // Caja solo en localStorage → codificar datos en URL
   const box = getBoxForShare(id);
   if (!box) return "";
 
@@ -112,6 +133,54 @@ function buildShareLink(id) {
   shareUrl.searchParams.set("mode", "ver");
   shareUrl.searchParams.set("share", payload);
   return shareUrl.toString();
+}
+
+function exportBoxesJson() {
+  const stored = loadBoxesFromStorage();
+  const allBoxes = {};
+
+  // Incluir cajas predefinidas (de boxes.json) con posibles overrides del admin
+  Object.entries(predefinedBoxes).forEach(([id, box]) => {
+    const override = stored[id];
+    if (override) {
+      allBoxes[id] = {
+        workerName: override.workerName || box.workerName || "",
+        tools: (Array.isArray(override.tools) && override.tools.length > 0)
+          ? override.tools.map(t => (typeof t === "string" ? t : (t.name || "")))
+          : (Array.isArray(box.tools) ? box.tools : [])
+      };
+    } else {
+      allBoxes[id] = {
+        workerName: box.workerName || "",
+        tools: Array.isArray(box.tools) ? box.tools : []
+      };
+    }
+  });
+
+  // Agregar cajas creadas desde el panel que no están en boxes.json
+  Object.entries(stored).forEach(([id, box]) => {
+    if (!allBoxes[id]) {
+      allBoxes[id] = {
+        workerName: box.workerName || "",
+        tools: Array.isArray(box.tools)
+          ? box.tools.map(t => (typeof t === "string" ? t : (t.name || "")))
+          : []
+      };
+    }
+  });
+
+  const json = JSON.stringify(allBoxes, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "boxes.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  alert("boxes.json descargado.\nReemplaza el archivo en el repositorio, haz commit y push.\nLuego los enlaces serán cortos para todas las cajas.");
 }
 
 async function copyText(text) {
@@ -306,7 +375,7 @@ function createNewBox(rawId, worker) {
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
-function init() {
+async function init() {
   // QR backward-compat: if index.html is loaded with ?box=xxx, redirect to caja.html
   const params = new URL(window.location.href).searchParams;
   const bxParam = params.get("box");
@@ -315,6 +384,8 @@ function init() {
     window.location.href = dest;
     return;
   }
+
+  await loadPublishedBoxIds();
 
   const loginForm = document.getElementById("loginForm");
   const loginError = document.getElementById("loginError");
@@ -362,6 +433,8 @@ function init() {
   });
 
   cancelNewBox.addEventListener("click", () => newBoxDialog.close());
+
+  document.getElementById("btnExportBoxes").addEventListener("click", exportBoxesJson);
 
   btnCloseShareDialog.addEventListener("click", () => shareDialog.close());
 
