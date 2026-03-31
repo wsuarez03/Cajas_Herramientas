@@ -65,7 +65,7 @@ function normalizeBoxId(value) {
 }
 
 function encodeSharePayload(payload) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  return LZString.compressToEncodedURIComponent(JSON.stringify(payload));
 }
 
 function getBoxForShare(id) {

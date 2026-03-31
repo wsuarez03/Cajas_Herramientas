@@ -81,10 +81,15 @@ const ui = {
 
 function decodeSharePayload(value) {
   try {
+    // Intentar con LZString (nuevo formato)
+    const lz = LZString.decompressFromEncodedURIComponent(value);
+    if (lz) return JSON.parse(lz);
+  } catch {}
+  try {
+    // Compatibilidad con links viejos (base64)
     return JSON.parse(decodeURIComponent(escape(atob(value))));
-  } catch {
-    return null;
-  }
+  } catch {}
+  return null;
 }
 
 function buildPdfDoc() {
