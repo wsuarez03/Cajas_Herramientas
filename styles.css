@@ -1,0 +1,419 @@
+:root {
+  --bg: #f7f7f4;
+  --paper: #ffffff;
+  --text: #1c2a2f;
+  --muted: #607176;
+  --accent: #0f4c5c;
+  --accent-2: #2f8f9d;
+  --ok: #2e7d32;
+  --bad: #c62828;
+  --border: #d8dedf;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 10% 20%, #ecf5f6 0, transparent 40%),
+    radial-gradient(circle at 90% 10%, #f5ede5 0, transparent 45%),
+    var(--bg);
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(120deg, var(--accent), var(--accent-2));
+  color: #fff;
+}
+
+.topbar button {
+  background: #ffffff;
+  color: var(--accent);
+  border: 1px solid #d6e8eb;
+}
+
+.topbar button.active {
+  background: #0a3742;
+  color: #ffffff;
+  border-color: #0a3742;
+}
+
+h1 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  opacity: 0.9;
+  font-size: 0.95rem;
+}
+
+.layout {
+  max-width: 980px;
+  margin: 1rem auto 2rem;
+  padding: 0 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  background: #fff;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 0.95rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+button.ghost {
+  background: #f0f5f5;
+  color: var(--accent);
+  border: 1px solid #cbe0e3;
+}
+
+button.danger {
+  background: #ffeceb;
+  color: var(--bad);
+  border: 1px solid #f5c7c4;
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.86rem;
+}
+
+.tools {
+  display: grid;
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+
+.tool-row {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.65rem;
+  display: grid;
+  gap: 0.5rem;
+  background: #fcfdfd;
+}
+
+.tool-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.tool-name {
+  font-weight: 700;
+}
+
+.status-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f4f8f8;
+  border: 1px solid #dce7e8;
+  padding: 0.4rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+}
+
+.status-ok {
+  color: var(--ok);
+}
+
+.status-bad {
+  color: var(--bad);
+}
+
+.actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.history {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.history-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: #fafcfc;
+}
+
+.history-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 0;
+  width: min(95vw, 460px);
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+dialog form,
+dialog article {
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+menu {
+  display: flex;
+  justify-content: end;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tool-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ─── LOGIN ──────────────────────────────────────────────────────── */
+
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+}
+
+.login-card {
+  width: min(100%, 400px);
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.login-logo h1 {
+  font-size: 1.35rem;
+  color: var(--accent);
+  margin: 0 0 0.25rem;
+}
+
+.login-error {
+  color: var(--bad);
+  font-size: 0.9rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ─── TOPBAR EXTRAS ──────────────────────────────────────────────── */
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-back {
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.btn-back:hover {
+  background: rgba(255, 255, 255, 0.27);
+}
+
+/* ─── BOXES TABLE ────────────────────────────────────────────────── */
+
+.boxes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.boxes-table th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  background: #f0f6f7;
+  border-bottom: 2px solid var(--border);
+  color: var(--accent);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.boxes-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+.boxes-table tr:last-child td {
+  border-bottom: none;
+}
+
+.boxes-table tr:hover td {
+  background: #f5fafb;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.btn-action {
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  display: inline-block;
+}
+
+.btn-ver {
+  background: #e3f2f7;
+  color: var(--accent);
+  border: 1px solid #b8dce6;
+}
+
+.btn-editar {
+  background: #fff3e0;
+  color: #bf5a00;
+  border: 1px solid #ffd599;
+}
+
+.btn-ver:hover {
+  background: #c9e8f1;
+}
+
+.btn-editar:hover {
+  background: #ffe4b0;
+}
+
+/* ─── BTN-DEL-TOOL (inline delete in editar mode) ────────────────── */
+
+.btn-del-tool {
+  padding: 0.28rem 0.6rem;
+  font-size: 0.82rem;
+  border-radius: 8px;
+}
+
+@media (max-width: 480px) {
+  .boxes-table th,
+  .boxes-table td {
+    padding: 0.5rem 0.4rem;
+    font-size: 0.88rem;
+  }
+}

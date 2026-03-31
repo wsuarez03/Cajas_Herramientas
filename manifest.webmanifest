@@ -1,0 +1,10 @@
+{
+  "name": "Control de Herramientas",
+  "short_name": "Herramientas",
+  "lang": "es",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f7f4",
+  "theme_color": "#0f4c5c",
+  "icons": []
+}

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f4c5c" />
+  <title>Control de Herramientas</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ─── LOGIN ──────────────────────────────────────────────────── -->
+  <div id="loginPanel" class="login-wrap">
+    <div class="login-card card">
+      <div class="login-logo">
+        <h1>Control de Herramientas</h1>
+        <p class="muted">Acceso de administración</p>
+      </div>
+      <form id="loginForm" class="grid">
+        <label>
+          Usuario
+          <input id="loginUser" type="text" autocomplete="username" placeholder="admin" required />
+        </label>
+        <label>
+          Contraseña
+          <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" required />
+        </label>
+        <p id="loginError" class="login-error hidden">Usuario o contraseña incorrectos.</p>
+        <button type="submit">Ingresar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── DASHBOARD ───────────────────────────────────────────────── -->
+  <div id="dashPanel" class="hidden">
+    <header class="topbar">
+      <div>
+        <h1>CONTROL DE HERRAMIENTAS</h1>
+        <p class="subtitle">Panel de administración</p>
+      </div>
+      <div class="header-actions">
+        <button id="btnNewBox" type="button">+ Nueva caja</button>
+        <button id="btnLogout" type="button" class="ghost">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <div class="section-header">
+          <h2>Cajas registradas</h2>
+        </div>
+        <div id="boxesTable"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ─── DIALOG: Nueva caja ──────────────────────────────────────── -->
+  <dialog id="newBoxDialog">
+    <form method="dialog" id="newBoxForm">
+      <h3>Nueva caja</h3>
+      <label>
+        ID de caja
+        <input id="newBoxId" type="text" placeholder="Ej: caja-6" required />
+      </label>
+      <label>
+        Propietario
+        <input id="newBoxWorker" type="text" placeholder="Nombre del trabajador" />
+      </label>
+      <menu>
+        <button value="cancel" class="ghost" type="button" id="cancelNewBox">Cancelar</button>
+        <button value="default" type="submit">Crear</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="admin.js"></script>
+</body>
+</html>

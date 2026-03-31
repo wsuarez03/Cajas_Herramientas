@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f4c5c" />
+  <title>Caja - Control de Herramientas</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <a href="index.html" class="btn-back">&#8592; Panel</a>
+      <div>
+        <h1 id="pageTitle">CAJA</h1>
+        <p id="pageSubtitle" class="subtitle"></p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btnValidate" class="ghost" type="button">Validar</button>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <section class="card">
+      <div class="section-header">
+        <h2>Listado</h2>
+        <button id="btnAddTool" class="ghost" type="button">+ Agregar herramienta</button>
+      </div>
+      <p id="validateHint" class="muted small">Presione Validar para cambiar este listado a checklist.</p>
+
+      <form id="checkForm">
+        <div id="toolList" class="tools"></div>
+
+        <label id="notesLabel" class="hidden">
+          Observaciones generales
+          <textarea id="generalNotes" rows="4" placeholder="Anote novedades, faltantes, daños..."></textarea>
+        </label>
+
+        <div id="actionsBar" class="actions hidden">
+          <button type="submit">Guardar checklist</button>
+          <button id="btnExport" type="button" class="ghost">Exportar historial CSV</button>
+          <button id="btnReset" type="button" class="danger">Reiniciar estado actual</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Solo visible en modo Editar -->
+    <section class="card hidden" id="editWorkerCard">
+      <h2>Propietario de la caja</h2>
+      <form id="workerForm" class="grid">
+        <label>
+          Nombre trabajador
+          <input id="workerName" type="text" placeholder="Nombre del trabajador" />
+        </label>
+        <button type="submit">Guardar nombre</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <h2>Historial reciente</h2>
+      </div>
+      <div id="historyList" class="history"></div>
+    </section>
+
+  </main>
+
+  <dialog id="toolDialog">
+    <form method="dialog" id="toolDialogForm">
+      <h3>Nueva herramienta</h3>
+      <label>
+        Nombre
+        <input id="newToolName" type="text" required placeholder="Ej: Llave 10 mm" />
+      </label>
+      <menu>
+        <button value="cancel" class="ghost" type="button" id="cancelToolDialog">Cancelar</button>
+        <button value="default" type="submit">Agregar</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
