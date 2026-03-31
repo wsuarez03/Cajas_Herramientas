@@ -259,14 +259,15 @@ function renderTools() {
     wrap.className = `tool-row ${state.validationMode ? "is-check" : "is-list"}`;
 
     if (state.validationMode) {
-      const hasStatus = tool.status === "ok" || tool.status === "no-ok";
+      const isOk = tool.status !== "no-ok";
+      const showObservation = Boolean(tool.touched);
       wrap.innerHTML = `
         <div class="tool-header">
           <div class="tool-name">${escapeHtml(tool.name)}</div>
         </div>
         <div class="status-group">
           <label class="status-option status-ok">
-            <input type="radio" name="status-${index}" value="ok" ${tool.status === "ok" ? "checked" : ""} />
+            <input type="radio" name="status-${index}" value="ok" ${isOk ? "checked" : ""} />
             OK
           </label>
           <label class="status-option status-bad">
@@ -274,7 +275,7 @@ function renderTools() {
             No OK
           </label>
         </div>
-        <label class="obs-label${hasStatus ? "" : " hidden"}">
+        <label class="obs-label${showObservation ? "" : " hidden"}">
           Observacion
           <input type="text" data-obs-index="${index}" placeholder="Opcional" value="${escapeHtml(tool.observation)}" />
         </label>
@@ -395,14 +396,14 @@ function createOrLoadBox(boxId) {
     if (template) {
       state.boxes[boxId] = {
         workerName: template.workerName || "",
-        tools: template.tools.map((name) => ({ name, status: "ok", observation: "" })),
+        tools: template.tools.map((name) => ({ name, status: "ok", observation: "", touched: false })),
         generalNotes: "",
         history: []
       };
     } else {
       state.boxes[boxId] = {
         workerName: "",
-        tools: defaultTools.map((name) => ({ name, status: "ok", observation: "" })),
+        tools: defaultTools.map((name) => ({ name, status: "ok", observation: "", touched: false })),
         generalNotes: "",
         history: []
       };
@@ -437,8 +438,9 @@ function loadSharedBoxFromUrl(boxId, shareParam) {
     generalNotes: "",
     tools: toolsList.map((tool) => ({
       name: typeof tool === "string" ? tool : (tool.name || ""),
-      status: "",
-      observation: ""
+      status: "ok",
+      observation: "",
+      touched: false
     })),
     history: []
   };
@@ -457,6 +459,7 @@ function collectChecklistFromUI() {
   box.tools.forEach((tool, i) => {
     const selected = document.querySelector(`input[name="status-${i}"]:checked`);
     tool.status = selected ? selected.value : "ok";
+    tool.touched = true;
 
     const obsInput = document.querySelector(`input[data-obs-index="${i}"]`);
     tool.observation = obsInput ? obsInput.value.trim() : "";
@@ -493,7 +496,8 @@ function resetCurrentStatus() {
   box.tools = box.tools.map((t) => ({
     ...t,
     status: "ok",
-    observation: ""
+    observation: "",
+    touched: false
   }));
   box.generalNotes = "";
 
@@ -571,18 +575,42 @@ function setupEvents() {
     state.validationMode = entering;
     if (entering) {
       const box = getActiveBox();
-      if (box) box.tools.forEach(t => { t.status = ""; t.observation = ""; });
+      if (box) box.tools.forEach((t) => {
+        t.status = "ok";
+        t.observation = "";
+        t.touched = false;
+      });
     }
     render();
   });
 
   ui.toolList.addEventListener("change", (e) => {
     if (e.target.type === "radio" && state.validationMode) {
-      const row = e.target.closest(".tool-row");
-      if (row) {
-        const obsLabel = row.querySelector(".obs-label");
-        if (obsLabel) obsLabel.classList.remove("hidden");
+      const match = /^status-(\d+)$/.exec(e.target.name || "");
+      const idx = match ? Number(match[1]) : NaN;
+      const box = getActiveBox();
+      if (box && Number.isFinite(idx) && box.tools[idx]) {
+        box.tools[idx].status = e.target.value;
+        box.tools[idx].touched = true;
       }
+      const row = e.target.closest(".tool-row");
+      const obsLabel = row ? row.querySelector(".obs-label") : null;
+      if (obsLabel) obsLabel.classList.remove("hidden");
+    }
+  });
+
+  ui.toolList.addEventListener("click", (e) => {
+    if (e.target.type === "radio" && state.validationMode) {
+      const match = /^status-(\d+)$/.exec(e.target.name || "");
+      const idx = match ? Number(match[1]) : NaN;
+      const box = getActiveBox();
+      if (box && Number.isFinite(idx) && box.tools[idx]) {
+        box.tools[idx].status = e.target.value;
+        box.tools[idx].touched = true;
+      }
+      const row = e.target.closest(".tool-row");
+      const obsLabel = row ? row.querySelector(".obs-label") : null;
+      if (obsLabel) obsLabel.classList.remove("hidden");
     }
   });
 
@@ -604,7 +632,7 @@ function setupEvents() {
     const name = ui.newToolName.value.trim();
     if (!name) return;
 
-    box.tools.push({ name, status: "ok", observation: "" });
+    box.tools.push({ name, status: "ok", observation: "", touched: false });
     persistActiveBox();
     renderTools();
     ui.toolDialog.close();

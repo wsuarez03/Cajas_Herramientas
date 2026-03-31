@@ -184,19 +184,37 @@ button:disabled {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: #f4f8f8;
-  border: 1px solid #dce7e8;
-  padding: 0.4rem 0.6rem;
-  border-radius: 999px;
+  background: transparent;
+  border: 0;
+  padding: 0.2rem 0.3rem;
+  border-radius: 10px;
   font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.status-option input[type="radio"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  appearance: auto;
+  -webkit-appearance: radio;
+  accent-color: var(--accent);
 }
 
 .status-ok {
   color: var(--ok);
 }
 
+.status-ok input[type="radio"] {
+  accent-color: var(--ok);
+}
+
 .status-bad {
   color: var(--bad);
+}
+
+.status-bad input[type="radio"] {
+  accent-color: var(--bad);
 }
 
 .actions {
