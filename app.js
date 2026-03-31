@@ -245,6 +245,7 @@ function renderTools() {
     wrap.className = `tool-row ${state.validationMode ? "is-check" : "is-list"}`;
 
     if (state.validationMode) {
+      const hasStatus = tool.status === "ok" || tool.status === "no-ok";
       wrap.innerHTML = `
         <div class="tool-header">
           <div class="tool-name">${escapeHtml(tool.name)}</div>
@@ -259,7 +260,7 @@ function renderTools() {
             No OK
           </label>
         </div>
-        <label>
+        <label class="obs-label${hasStatus ? "" : " hidden"}">
           Observacion
           <input type="text" data-obs-index="${index}" placeholder="Opcional" value="${escapeHtml(tool.observation)}" />
         </label>
@@ -399,7 +400,8 @@ function createOrLoadBox(boxId) {
 
 function loadSharedBoxFromUrl(boxId, shareParam) {
   const payload = decodeSharePayload(shareParam);
-  if (!payload || !Array.isArray(payload.tools)) {
+  const toolsList = payload && (Array.isArray(payload.tools) ? payload.tools : Array.isArray(payload.t) ? payload.t : null);
+  if (!payload || !toolsList) {
     return false;
   }
 
@@ -415,15 +417,16 @@ function loadSharedBoxFromUrl(boxId, shareParam) {
     }
   }
 
+  const workerName = payload.workerName || payload.w || "";
   state.boxes[boxId] = sharedBox || {
-    workerName: payload.workerName || "",
-    generalNotes: payload.generalNotes || "",
-    tools: payload.tools.map((tool) => ({
-      name: tool.name || "",
-      status: tool.status || "ok",
-      observation: tool.observation || ""
+    workerName,
+    generalNotes: "",
+    tools: toolsList.map((tool) => ({
+      name: typeof tool === "string" ? tool : (tool.name || ""),
+      status: "",
+      observation: ""
     })),
-    history: Array.isArray(payload.history) ? payload.history : []
+    history: []
   };
 
   state.activeBoxId = boxId;
@@ -550,8 +553,23 @@ function setupEvents() {
   ui.btnExport.addEventListener("click", exportHistoryCsv);
 
   ui.btnValidate.addEventListener("click", () => {
-    state.validationMode = !state.validationMode;
+    const entering = !state.validationMode;
+    state.validationMode = entering;
+    if (entering) {
+      const box = getActiveBox();
+      if (box) box.tools.forEach(t => { t.status = ""; t.observation = ""; });
+    }
     render();
+  });
+
+  ui.toolList.addEventListener("change", (e) => {
+    if (e.target.type === "radio" && state.validationMode) {
+      const row = e.target.closest(".tool-row");
+      if (row) {
+        const obsLabel = row.querySelector(".obs-label");
+        if (obsLabel) obsLabel.classList.remove("hidden");
+      }
+    }
   });
 
   ui.btnAddTool.addEventListener("click", () => {

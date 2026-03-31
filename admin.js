@@ -102,10 +102,9 @@ function buildShareLink(id) {
   if (!box) return "";
 
   const payload = encodeSharePayload({
-    boxId: id,
-    workerName: box.workerName,
-    generalNotes: box.generalNotes,
-    tools: box.tools
+    b: id,
+    w: box.workerName,
+    t: box.tools.map(tool => tool.name || tool)
   });
 
   const shareUrl = new URL("caja.html", window.location.href);
