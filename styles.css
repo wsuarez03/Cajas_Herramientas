@@ -394,12 +394,22 @@ menu {
   border: 1px solid #ffd599;
 }
 
+.btn-share {
+  background: #eef5ff;
+  color: #1e4fa1;
+  border: 1px solid #c7dafb;
+}
+
 .btn-ver:hover {
   background: #c9e8f1;
 }
 
 .btn-editar:hover {
   background: #ffe4b0;
+}
+
+.btn-share:hover {
+  background: #dbe9ff;
 }
 
 /* ─── BTN-DEL-TOOL (inline delete in editar mode) ────────────────── */

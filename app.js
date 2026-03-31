@@ -50,7 +50,8 @@ const state = {
   activeBoxId: "",
   pageMode: "ver",   // "ver" | "editar"
   boxes: {},
-  validationMode: false
+  validationMode: false,
+  sharedView: false
 };
 
 const ui = {
@@ -89,6 +90,14 @@ function loadState() {
   }
 }
 
+function decodeSharePayload(value) {
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(value))));
+  } catch {
+    return null;
+  }
+}
+
 function saveState() {
   const raw = localStorage.getItem(STORAGE_KEY);
   let stored = {};
@@ -104,7 +113,10 @@ function getActiveBox() {
 function renderPageHeader() {
   const box = getActiveBox();
   const worker = box ? (box.workerName || "Sin propietario") : "—";
-  const modeLabel = state.pageMode === "editar" ? " · Edicion" : " · Vista";
+  let modeLabel = state.pageMode === "editar" ? " · Edicion" : " · Vista";
+  if (state.sharedView) {
+    modeLabel = " · Enlace compartido";
+  }
 
   ui.pageTitle.textContent = state.activeBoxId ? state.activeBoxId.toUpperCase() : "CAJA";
   ui.pageSubtitle.textContent = box
@@ -215,31 +227,37 @@ function render() {
 
   const box = getActiveBox();
   const isEditar = state.pageMode === "editar";
+  const isReadOnlyShare = state.sharedView;
 
   // Boton validar
   if (ui.btnValidate) {
     ui.btnValidate.textContent = state.validationMode ? "Ver listado" : "Validar";
     ui.btnValidate.classList.toggle("active", state.validationMode);
-    ui.btnValidate.disabled = !box;
+    ui.btnValidate.disabled = !box || isReadOnlyShare;
+    ui.btnValidate.classList.toggle("hidden", isReadOnlyShare);
   }
 
   if (ui.validateHint) {
-    ui.validateHint.textContent = state.validationMode
-      ? "Modo checklist activo: seleccione OK / No OK y agregue observaciones."
-      : "Presione Validar para cambiar este listado a checklist.";
+    if (isReadOnlyShare) {
+      ui.validateHint.textContent = "Este enlace compartido muestra una copia del listado de la caja.";
+    } else {
+      ui.validateHint.textContent = state.validationMode
+        ? "Modo checklist activo: seleccione OK / No OK y agregue observaciones."
+        : "Presione Validar para cambiar este listado a checklist.";
+    }
   }
 
   // Agregar herramienta: siempre visible en editar; oculto en ver cuando hay checklist activo
-  ui.btnAddTool.disabled = !box;
-  ui.btnAddTool.classList.toggle("hidden", !isEditar && state.validationMode);
+  ui.btnAddTool.disabled = !box || isReadOnlyShare;
+  ui.btnAddTool.classList.toggle("hidden", isReadOnlyShare || (!isEditar && state.validationMode));
 
   // Notas y acciones: solo en modo checklist
-  ui.notesLabel.classList.toggle("hidden", !state.validationMode);
-  ui.actionsBar.classList.toggle("hidden", !state.validationMode);
+  ui.notesLabel.classList.toggle("hidden", isReadOnlyShare || !state.validationMode);
+  ui.actionsBar.classList.toggle("hidden", isReadOnlyShare || !state.validationMode);
 
   // Tarjeta edicion propietario: solo en editar
-  ui.editWorkerCard.classList.toggle("hidden", !isEditar);
-  if (isEditar && box) {
+  ui.editWorkerCard.classList.toggle("hidden", isReadOnlyShare || !isEditar);
+  if (!isReadOnlyShare && isEditar && box) {
     ui.workerName.value = box.workerName || "";
   }
 
@@ -268,6 +286,30 @@ function createOrLoadBox(boxId) {
     saveState();
   }
   state.activeBoxId = boxId;
+}
+
+function loadSharedBoxFromUrl(boxId, shareParam) {
+  const payload = decodeSharePayload(shareParam);
+  if (!payload || !Array.isArray(payload.tools)) {
+    return false;
+  }
+
+  state.boxes[boxId] = {
+    workerName: payload.workerName || "",
+    generalNotes: payload.generalNotes || "",
+    tools: payload.tools.map((tool) => ({
+      name: tool.name || "",
+      status: tool.status || "ok",
+      observation: tool.observation || ""
+    })),
+    history: Array.isArray(payload.history) ? payload.history : []
+  };
+
+  state.activeBoxId = boxId;
+  state.sharedView = true;
+  state.pageMode = "ver";
+  state.validationMode = false;
+  return true;
 }
 
 function collectChecklistFromUI() {
@@ -445,8 +487,10 @@ async function disableServiceWorker() {
 async function init() {
   const params = new URL(window.location.href).searchParams;
   const rawBox = params.get("box") || "";
+  const shareParam = params.get("share") || "";
   const boxId = rawBox.trim().toLowerCase().replace(/\s+/g, "-");
   state.pageMode = params.get("mode") === "editar" ? "editar" : "ver";
+  state.sharedView = false;
 
   await disableServiceWorker();
 
@@ -457,7 +501,9 @@ async function init() {
   }
 
   loadState();
-  createOrLoadBox(boxId);
+  if (!loadSharedBoxFromUrl(boxId, shareParam)) {
+    createOrLoadBox(boxId);
+  }
   setupEvents();
   render();
 }

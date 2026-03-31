@@ -64,6 +64,75 @@ function normalizeBoxId(value) {
   return (value || "").trim().toLowerCase().replace(/\s+/g, "-");
 }
 
+function encodeSharePayload(payload) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+}
+
+function getBoxForShare(id) {
+  const stored = loadBoxesFromStorage();
+  const storedBox = stored[id];
+  if (storedBox) {
+    return {
+      workerName: storedBox.workerName || "",
+      generalNotes: storedBox.generalNotes || "",
+      tools: Array.isArray(storedBox.tools) ? storedBox.tools.map((tool) => ({
+        name: tool.name || "",
+        status: tool.status || "ok",
+        observation: tool.observation || ""
+      })) : [],
+      history: Array.isArray(storedBox.history) ? storedBox.history : []
+    };
+  }
+
+  const predefined = predefinedBoxes[id];
+  if (predefined) {
+    return {
+      workerName: predefined.workerName || "",
+      generalNotes: "",
+      tools: predefined.tools.map((name) => ({ name, status: "ok", observation: "" })),
+      history: []
+    };
+  }
+
+  return null;
+}
+
+function buildShareLink(id) {
+  const box = getBoxForShare(id);
+  if (!box) return "";
+
+  const payload = encodeSharePayload({
+    boxId: id,
+    workerName: box.workerName,
+    generalNotes: box.generalNotes,
+    tools: box.tools
+  });
+
+  const shareUrl = new URL("caja.html", window.location.href);
+  shareUrl.searchParams.set("box", id);
+  shareUrl.searchParams.set("mode", "ver");
+  shareUrl.searchParams.set("share", payload);
+  return shareUrl.toString();
+}
+
+async function shareBox(id) {
+  const link = buildShareLink(id);
+  if (!link) {
+    alert("No fue posible generar el enlace para esta caja.");
+    return;
+  }
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(link);
+      alert("Enlace copiado al portapapeles.");
+      return;
+    }
+  } catch {}
+
+  window.prompt("Copie este enlace para compartir la caja:", link);
+}
+
 function checkAuth() {
   return sessionStorage.getItem(SESSION_KEY) === "1";
 }
@@ -158,6 +227,7 @@ function renderBoxesTable() {
         <div class="table-actions">
           <a href="caja.html?box=${encodeURIComponent(id)}&mode=ver" class="btn-action btn-ver">Ver</a>
           <a href="caja.html?box=${encodeURIComponent(id)}&mode=editar" class="btn-action btn-editar">Editar</a>
+          <button class="btn-action btn-share" data-share-id="${escapeHtml(id)}">Compartir</button>
           <button class="btn-action btn-del danger" data-id="${escapeHtml(id)}">Eliminar</button>
         </div>
       </td>
@@ -177,6 +247,12 @@ function renderBoxesTable() {
         saveBoxesToStorage(boxes);
         renderBoxesTable();
       }
+    });
+  });
+
+  tbody.querySelectorAll(".btn-share").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      shareBox(btn.dataset.shareId);
     });
   });
 }
