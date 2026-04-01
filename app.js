@@ -178,6 +178,8 @@ const LISTADO_LOGO_CANDIDATES = [
   "./assets/logo.png"
 ];
 
+const LISTADO_FORMAT_VERSION_DATE = "27/01/2023";
+
 const listadoLogoState = {
   attempted: false,
   canvas: null
@@ -223,7 +225,6 @@ function buildListadoPdfDoc(logoCanvas) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const date = new Date().toLocaleString("es-CO");
-  const dateOnly = new Date().toLocaleDateString("es-CO");
   const worker = box.workerName || "Sin propietario";
   const boxId = state.activeBoxId.toUpperCase();
   const rowsPerPage = 30;
@@ -249,11 +250,21 @@ function buildListadoPdfDoc(logoCanvas) {
     return text ? text + ellipsis : ellipsis;
   };
 
-  const drawHeader = (page, yTop) => {
-    doc.setLineWidth(0.25);
+  const drawHeader = (yTop) => {
+    doc.setLineWidth(0.3);
     doc.rect(10, yTop, 277, 22);
-    doc.line(40, yTop, 40, yTop + 22);
-    doc.line(230, yTop, 230, yTop + 22);
+
+    // Bloque logo (equivalente B2:C4) y bloque titulo (D2:R3).
+    doc.rect(10, yTop, 30, 22);
+    doc.rect(40, yTop, 247, 14);
+
+    // Fila inferior de metadatos (equivalente fila 4 con celdas separadas).
+    doc.rect(40, yTop + 14, 34, 8);
+    doc.rect(74, yTop + 14, 44, 8);
+    doc.rect(118, yTop + 14, 32, 8);
+    doc.rect(150, yTop + 14, 24, 8);
+    doc.rect(174, yTop + 14, 32, 8);
+    doc.rect(206, yTop + 14, 81, 8);
 
     if (logoCanvas) {
       doc.addImage(logoCanvas, "PNG", 14, yTop + 3, 22, 16);
@@ -267,10 +278,12 @@ function buildListadoPdfDoc(logoCanvas) {
     doc.text("INVENTARIO CAJAS DE HERRAMIENTAS MANUALES", 135, yTop + 9, { align: "center" });
     doc.setFontSize(8);
     doc.setFont(undefined, "normal");
-    doc.text("CODIGO: OYS-FO-09", 45, yTop + 16);
-    doc.text("VERSION: 01", 120, yTop + 16);
-    doc.text(`FECHA: ${dateOnly}`, 168, yTop + 16);
-    doc.text(`PAGINA ${page + 1}/${totalPages}`, 284, yTop + 16, { align: "right" });
+    doc.text("CODIGO", 57, yTop + 19, { align: "center" });
+    doc.text("OYS-FO-09", 96, yTop + 19, { align: "center" });
+    doc.text("VERSION", 134, yTop + 19, { align: "center" });
+    doc.text("01", 162, yTop + 19, { align: "center" });
+    doc.text("FECHA", 190, yTop + 19, { align: "center" });
+    doc.text(LISTADO_FORMAT_VERSION_DATE, 246.5, yTop + 19, { align: "center" });
   };
 
   const drawInfoBlocks = (yTop) => {
@@ -344,10 +357,11 @@ function buildListadoPdfDoc(logoCanvas) {
     const y = 56;
     const tableWidth = 277;
     const headerHeight = 4;
-    const rowHeight = 3.35;
+    const rowHeight = 3.2;
     const totalRowsHeight = rowHeight * rowsPerPage;
     const tableHeight = headerHeight + totalRowsHeight;
-    const colWidths = [16, 142, 25, 32, 62];
+    // Proporcion calculada de columnas B:R del formato Excel.
+    const colWidths = [14.2, 173.9, 34.6, 20.6, 33.7];
     const colX = [x];
 
     for (let i = 0; i < colWidths.length; i++) {
@@ -400,11 +414,11 @@ function buildListadoPdfDoc(logoCanvas) {
     const start = page * rowsPerPage;
     const pageRows = rows.slice(start, start + rowsPerPage);
 
-    drawHeader(page, 8);
+    drawHeader(8);
     drawInfoBlocks(31);
 
     drawTable(pageRows, start);
-    drawFooter(160);
+    drawFooter(158);
   }
 
   return doc;
