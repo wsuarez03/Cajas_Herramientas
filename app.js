@@ -166,7 +166,55 @@ async function downloadPdf() {
   doc.save(getPdfFileName());
 }
 
-function buildListadoPdfDoc() {
+const LISTADO_LOGO_CANDIDATES = [
+  "./Logo Valser (2).png",
+  "./logo.png",
+  "./logo.jpg",
+  "./logo.jpeg",
+  "./logo.webp",
+  "./Logo.png",
+  "./Logo.jpg",
+  "./img/logo.png",
+  "./assets/logo.png"
+];
+
+const listadoLogoState = {
+  attempted: false,
+  canvas: null
+};
+
+function tryLoadImage(src) {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = `${src}?v=${Date.now()}`;
+  });
+}
+
+async function getListadoLogoCanvas() {
+  if (listadoLogoState.attempted) return listadoLogoState.canvas;
+  listadoLogoState.attempted = true;
+
+  for (const path of LISTADO_LOGO_CANDIDATES) {
+    const image = await tryLoadImage(path);
+    if (!image) continue;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) continue;
+
+    ctx.drawImage(image, 0, 0);
+    listadoLogoState.canvas = canvas;
+    return canvas;
+  }
+
+  return null;
+}
+
+function buildListadoPdfDoc(logoCanvas) {
   const box = getActiveBox();
   if (!box) return null;
 
@@ -188,14 +236,31 @@ function buildListadoPdfDoc() {
   }));
 
   const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+
+  const fitText = (value, maxWidth) => {
+    const raw = String(value ?? "");
+    if (!raw) return "";
+    if (doc.getTextWidth(raw) <= maxWidth) return raw;
+    const ellipsis = "...";
+    let text = raw;
+    while (text.length > 0 && doc.getTextWidth(text + ellipsis) > maxWidth) {
+      text = text.slice(0, -1);
+    }
+    return text ? text + ellipsis : ellipsis;
+  };
+
   const drawHeader = (page, yTop) => {
     doc.setLineWidth(0.25);
     doc.rect(10, yTop, 277, 22);
     doc.line(40, yTop, 40, yTop + 22);
     doc.line(230, yTop, 230, yTop + 22);
 
-    doc.setFontSize(7);
-    doc.text("LOGO", 25, yTop + 11, { align: "center" });
+    if (logoCanvas) {
+      doc.addImage(logoCanvas, "PNG", 14, yTop + 3, 22, 16);
+    } else {
+      doc.setFontSize(7);
+      doc.text("LOGO", 25, yTop + 11, { align: "center" });
+    }
 
     doc.setFontSize(12);
     doc.setFont(undefined, "bold");
@@ -232,7 +297,7 @@ function buildListadoPdfDoc() {
     doc.text("NOMBRE DEL TECNICO", 12, yTop + 20);
     doc.text("IDENTIFICACION", 172, yTop + 20);
     doc.setFont(undefined, "normal");
-    doc.text(worker, 55, yTop + 20);
+    doc.text(fitText(worker, 112), 55, yTop + 20);
   };
 
   const drawFooter = (yTop) => {
@@ -274,6 +339,61 @@ function buildListadoPdfDoc() {
     }
   };
 
+  const drawTable = (pageRows, start) => {
+    const x = 10;
+    const y = 56;
+    const tableWidth = 277;
+    const headerHeight = 4;
+    const rowHeight = 3.35;
+    const totalRowsHeight = rowHeight * rowsPerPage;
+    const tableHeight = headerHeight + totalRowsHeight;
+    const colWidths = [16, 142, 25, 32, 62];
+    const colX = [x];
+
+    for (let i = 0; i < colWidths.length; i++) {
+      colX.push(colX[i] + colWidths[i]);
+    }
+
+    doc.setLineWidth(0.2);
+    doc.rect(x, y, tableWidth, tableHeight);
+
+    for (let i = 1; i < colX.length - 1; i++) {
+      doc.line(colX[i], y, colX[i], y + tableHeight);
+    }
+
+    doc.line(x, y + headerHeight, x + tableWidth, y + headerHeight);
+    for (let i = 1; i <= rowsPerPage; i++) {
+      const yLine = y + headerHeight + (i * rowHeight);
+      doc.line(x, yLine, x + tableWidth, yLine);
+    }
+
+    doc.setFontSize(7.2);
+    doc.setFont(undefined, "bold");
+    doc.text("ITEM", x + (colWidths[0] / 2), y + 2.9, { align: "center" });
+    doc.text("DESCRIPCION", colX[1] + (colWidths[1] / 2), y + 2.9, { align: "center" });
+    doc.text("CANTIDAD", colX[2] + (colWidths[2] / 2), y + 2.9, { align: "center" });
+    doc.text("RECIBE", colX[3] + (colWidths[3] / 2), y + 2.9, { align: "center" });
+    doc.text("REGRESA", colX[4] + (colWidths[4] / 2), y + 2.9, { align: "center" });
+
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(6.6);
+    for (let i = 0; i < rowsPerPage; i++) {
+      const row = pageRows[i];
+      const yText = y + headerHeight + (i * rowHeight) + 2.4;
+      const itemNumber = row ? row.index : (start + i + 1);
+      const description = row ? fitText(row.name, colWidths[1] - 2) : "";
+      const qty = row ? row.quantity : "";
+      const recibe = row ? fitText(row.recibe, colWidths[3] - 2) : "";
+      const regresa = row ? fitText(row.regresa, colWidths[4] - 2) : "";
+
+      doc.text(String(itemNumber), x + (colWidths[0] / 2), yText, { align: "center" });
+      doc.text(description, colX[1] + 1, yText);
+      doc.text(qty, colX[2] + (colWidths[2] / 2), yText, { align: "center" });
+      doc.text(recibe, colX[3] + (colWidths[3] / 2), yText, { align: "center" });
+      doc.text(regresa, colX[4] + 1, yText);
+    }
+  };
+
   for (let page = 0; page < totalPages; page++) {
     if (page > 0) doc.addPage();
 
@@ -283,34 +403,16 @@ function buildListadoPdfDoc() {
     drawHeader(page, 8);
     drawInfoBlocks(31);
 
-    doc.autoTable({
-      startY: 56,
-      head: [["ITEM", "DESCRIPCION", "CANTIDAD", "RECIBE", "REGRESA"]],
-      body: Array.from({ length: rowsPerPage }, (_, i) => {
-        const row = pageRows[i];
-        if (!row) return [start + i + 1, "", "", "", ""];
-        return [row.index, row.name, row.quantity, row.recibe, row.regresa];
-      }),
-      styles: { fontSize: 8, cellPadding: 1.2, lineColor: 20, lineWidth: 0.1 },
-      headStyles: { fillColor: [15, 76, 92], textColor: 255 },
-      columnStyles: {
-        0: { cellWidth: 16, halign: "center" },
-        1: { cellWidth: 142 },
-        2: { cellWidth: 25, halign: "center" },
-        3: { cellWidth: 32, halign: "center" },
-        4: { cellWidth: 62 }
-      },
-      margin: { left: 10, right: 10 }
-    });
-
-    drawFooter(170);
+    drawTable(pageRows, start);
+    drawFooter(160);
   }
 
   return doc;
 }
 
 async function downloadListadoPdf() {
-  const doc = buildListadoPdfDoc();
+  const logoCanvas = await getListadoLogoCanvas();
+  const doc = buildListadoPdfDoc(logoCanvas);
   if (!doc) return;
   const fileName = `${state.activeBoxId}-listado-${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);
