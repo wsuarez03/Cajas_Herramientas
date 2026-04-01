@@ -77,6 +77,7 @@ const ui = {
   btnValidate:     document.getElementById("btnValidate"),
   validateHint:    document.getElementById("validateHint"),
   btnAddTool:      document.getElementById("btnAddTool"),
+  btnGenerateListado: document.getElementById("btnGenerateListado"),
   btnExport:       document.getElementById("btnExport"),
   btnReset:        document.getElementById("btnReset"),
   editWorkerCard:  document.getElementById("editWorkerCard"),
@@ -163,6 +164,156 @@ async function downloadPdf() {
   const doc = buildPdfDoc();
   if (!doc) return;
   doc.save(getPdfFileName());
+}
+
+function buildListadoPdfDoc() {
+  const box = getActiveBox();
+  if (!box) return null;
+
+  collectChecklistFromUI();
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const date = new Date().toLocaleString("es-CO");
+  const dateOnly = new Date().toLocaleDateString("es-CO");
+  const worker = box.workerName || "Sin propietario";
+  const boxId = state.activeBoxId.toUpperCase();
+  const rowsPerPage = 30;
+  const rows = box.tools.map((tool, i) => ({
+    index: i + 1,
+    name: tool.name,
+    quantity: "1",
+    recibe: tool.status === "ok" ? "OK" : "NO OK",
+    regresa: tool.observation || ""
+  }));
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / rowsPerPage));
+  const drawHeader = (page, yTop) => {
+    doc.setLineWidth(0.25);
+    doc.rect(10, yTop, 277, 22);
+    doc.line(40, yTop, 40, yTop + 22);
+    doc.line(230, yTop, 230, yTop + 22);
+
+    doc.setFontSize(7);
+    doc.text("LOGO", 25, yTop + 11, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text("INVENTARIO CAJAS DE HERRAMIENTAS MANUALES", 135, yTop + 9, { align: "center" });
+    doc.setFontSize(8);
+    doc.setFont(undefined, "normal");
+    doc.text("CODIGO: OYS-FO-09", 45, yTop + 16);
+    doc.text("VERSION: 01", 120, yTop + 16);
+    doc.text(`FECHA: ${dateOnly}`, 168, yTop + 16);
+    doc.text(`PAGINA ${page + 1}/${totalPages}`, 284, yTop + 16, { align: "right" });
+  };
+
+  const drawInfoBlocks = (yTop) => {
+    doc.setLineWidth(0.25);
+    doc.rect(10, yTop, 277, 14);
+    doc.line(110, yTop, 110, yTop + 14);
+    doc.line(195, yTop, 195, yTop + 14);
+
+    doc.setFontSize(8);
+    doc.setFont(undefined, "bold");
+    doc.text("CAJA DE HERRAMIENTAS NUMERO", 12, yTop + 5.5);
+    doc.text("FECHA RECIBE", 112, yTop + 5.5);
+    doc.text("FECHA REGRESA", 197, yTop + 5.5);
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(10);
+    doc.text(boxId, 12, yTop + 11);
+    doc.text(date, 112, yTop + 11);
+    doc.text(date, 197, yTop + 11);
+
+    doc.rect(10, yTop + 14, 277, 10);
+    doc.line(170, yTop + 14, 170, yTop + 24);
+    doc.setFontSize(8);
+    doc.setFont(undefined, "bold");
+    doc.text("NOMBRE DEL TECNICO", 12, yTop + 20);
+    doc.text("IDENTIFICACION", 172, yTop + 20);
+    doc.setFont(undefined, "normal");
+    doc.text(worker, 55, yTop + 20);
+  };
+
+  const drawFooter = (yTop) => {
+    doc.setLineWidth(0.25);
+    doc.rect(10, yTop, 277, 24);
+    doc.line(148.5, yTop, 148.5, yTop + 24);
+    doc.line(10, yTop + 5, 287, yTop + 5);
+    doc.line(10, yTop + 11, 287, yTop + 11);
+    doc.line(79, yTop + 5, 79, yTop + 24);
+    doc.line(148.5 - 69, yTop + 5, 148.5 - 69, yTop + 24);
+    doc.line(217.5, yTop + 5, 217.5, yTop + 24);
+
+    doc.setFontSize(8);
+    doc.setFont(undefined, "bold");
+    doc.text("SALIDA", 79, yTop + 3.8, { align: "center" });
+    doc.text("REGRESO", 218, yTop + 3.8, { align: "center" });
+    doc.text("ENTREGA", 44.5, yTop + 9, { align: "center" });
+    doc.text("RECIBE", 113.5, yTop + 9, { align: "center" });
+    doc.text("ENTREGA", 183, yTop + 9, { align: "center" });
+    doc.text("RECIBE", 252, yTop + 9, { align: "center" });
+
+    doc.setFont(undefined, "normal");
+    doc.text("NOMBRE", 44.5, yTop + 15, { align: "center" });
+    doc.text("NOMBRE", 113.5, yTop + 15, { align: "center" });
+    doc.text("NOMBRE", 183, yTop + 15, { align: "center" });
+    doc.text("NOMBRE", 252, yTop + 15, { align: "center" });
+    doc.text("FIRMA", 44.5, yTop + 21, { align: "center" });
+    doc.text("FIRMA", 113.5, yTop + 21, { align: "center" });
+    doc.text("FIRMA", 183, yTop + 21, { align: "center" });
+    doc.text("FIRMA", 252, yTop + 21, { align: "center" });
+
+    doc.rect(10, yTop + 24, 277, 8);
+    doc.setFont(undefined, "bold");
+    doc.text("OBSERVACIONES:", 12, yTop + 29);
+    doc.setFont(undefined, "normal");
+    if (box.generalNotes) {
+      const notesLine = doc.splitTextToSize(box.generalNotes, 240).slice(0, 1);
+      doc.text(notesLine, 45, yTop + 29);
+    }
+  };
+
+  for (let page = 0; page < totalPages; page++) {
+    if (page > 0) doc.addPage();
+
+    const start = page * rowsPerPage;
+    const pageRows = rows.slice(start, start + rowsPerPage);
+
+    drawHeader(page, 8);
+    drawInfoBlocks(31);
+
+    doc.autoTable({
+      startY: 56,
+      head: [["ITEM", "DESCRIPCION", "CANTIDAD", "RECIBE", "REGRESA"]],
+      body: Array.from({ length: rowsPerPage }, (_, i) => {
+        const row = pageRows[i];
+        if (!row) return [start + i + 1, "", "", "", ""];
+        return [row.index, row.name, row.quantity, row.recibe, row.regresa];
+      }),
+      styles: { fontSize: 8, cellPadding: 1.2, lineColor: 20, lineWidth: 0.1 },
+      headStyles: { fillColor: [15, 76, 92], textColor: 255 },
+      columnStyles: {
+        0: { cellWidth: 16, halign: "center" },
+        1: { cellWidth: 142 },
+        2: { cellWidth: 25, halign: "center" },
+        3: { cellWidth: 32, halign: "center" },
+        4: { cellWidth: 62 }
+      },
+      margin: { left: 10, right: 10 }
+    });
+
+    drawFooter(170);
+  }
+
+  return doc;
+}
+
+async function downloadListadoPdf() {
+  const doc = buildListadoPdfDoc();
+  if (!doc) return;
+  const fileName = `${state.activeBoxId}-listado-${new Date().toISOString().slice(0, 10)}.pdf`;
+  doc.save(fileName);
 }
 
 async function sharePdf() {
@@ -583,6 +734,10 @@ function setupEvents() {
   });
 
   ui.btnExport.addEventListener("click", exportHistoryCsv);
+
+  if (ui.btnGenerateListado) {
+    ui.btnGenerateListado.addEventListener("click", downloadListadoPdf);
+  }
 
   ui.btnValidate.addEventListener("click", () => {
     const entering = !state.validationMode;
