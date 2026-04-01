@@ -364,8 +364,8 @@ function buildListadoPdfDoc(logoCanvas) {
     const x = sheetLeft;
     const y = 51;
     const tableWidth = sheetWidth;
-    const headerHeight = 5;
-    const rowHeight = 3.7;
+    const headerHeight = 5.5;
+    const rowHeight = 3.95;
     const totalRowsHeight = rowHeight * rowsPerPage;
     const tableHeight = headerHeight + totalRowsHeight;
     // Proporcion calculada de columnas B:R del formato Excel.
@@ -389,19 +389,19 @@ function buildListadoPdfDoc(logoCanvas) {
       doc.line(x, yLine, x + tableWidth, yLine);
     }
 
-    doc.setFontSize(8.2);
+    doc.setFontSize(8.6);
     doc.setFont(undefined, "bold");
-    doc.text("ITEM", x + (colWidths[0] / 2), y + 3.5, { align: "center" });
-    doc.text("DESCRIPCION", colX[1] + (colWidths[1] / 2), y + 3.5, { align: "center" });
-    doc.text("CANTIDAD", colX[2] + (colWidths[2] / 2), y + 3.5, { align: "center" });
-    doc.text("RECIBE", colX[3] + (colWidths[3] / 2), y + 3.5, { align: "center" });
-    doc.text("REGRESA", colX[4] + (colWidths[4] / 2), y + 3.5, { align: "center" });
+    doc.text("ITEM", x + (colWidths[0] / 2), y + 4, { align: "center" });
+    doc.text("DESCRIPCION", colX[1] + (colWidths[1] / 2), y + 4, { align: "center" });
+    doc.text("CANTIDAD", colX[2] + (colWidths[2] / 2), y + 4, { align: "center" });
+    doc.text("RECIBE", colX[3] + (colWidths[3] / 2), y + 4, { align: "center" });
+    doc.text("REGRESA", colX[4] + (colWidths[4] / 2), y + 4, { align: "center" });
 
     doc.setFont(undefined, "normal");
-    doc.setFontSize(7.4);
+    doc.setFontSize(7.9);
     for (let i = 0; i < rowsPerPage; i++) {
       const row = pageRows[i];
-      const yText = y + headerHeight + (i * rowHeight) + 2.9;
+      const yText = y + headerHeight + (i * rowHeight) + 3.1;
       const itemNumber = row ? row.index : (start + i + 1);
       const description = row ? fitText(row.name, colWidths[1] - 2.5) : "";
       const qty = row ? row.quantity : "";
