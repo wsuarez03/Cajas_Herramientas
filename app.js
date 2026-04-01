@@ -276,7 +276,7 @@ function buildListadoPdfDoc(logoCanvas) {
     doc.rect(mapX(206), yTop + 14, mapW(81), 8);
 
     if (logoCanvas) {
-      doc.addImage(logoCanvas, "PNG", mapX(14), yTop + 3, mapW(22), 16);
+      doc.addImage(logoCanvas, "PNG", mapX(12), yTop + 3, mapW(26), 16);
     } else {
       doc.setFontSize(7);
       doc.text("LOGO", mapX(25), yTop + 11, { align: "center" });
@@ -284,7 +284,7 @@ function buildListadoPdfDoc(logoCanvas) {
 
     doc.setFontSize(12);
     doc.setFont(undefined, "bold");
-    doc.text("INVENTARIO CAJAS DE HERRAMIENTAS MANUALES", mapX(135), yTop + 9, { align: "center" });
+    doc.text("INVENTARIO CAJAS DE HERRAMIENTAS MANUALES", mapX(40) + (mapW(247) / 2), yTop + 9, { align: "center" });
     doc.setFontSize(8);
     doc.setFont(undefined, "normal");
     doc.text("CODIGO", mapX(57), yTop + 19, { align: "center" });
@@ -310,7 +310,7 @@ function buildListadoPdfDoc(logoCanvas) {
     doc.setFontSize(10);
     doc.text(boxId, mapX(12), yTop + 11);
     doc.text(checklistDate, mapX(112), yTop + 11);
-    doc.text(checklistDate, mapX(197), yTop + 11);
+    doc.text("", mapX(197), yTop + 11);
 
     doc.rect(sheetLeft, yTop + 14, sheetWidth, 10);
     doc.line(mapX(170), yTop + 14, mapX(170), yTop + 24);
@@ -362,7 +362,7 @@ function buildListadoPdfDoc(logoCanvas) {
 
   const drawTable = (pageRows, start) => {
     const x = sheetLeft;
-    const y = 56;
+    const y = 51;
     const tableWidth = sheetWidth;
     const headerHeight = 5;
     const rowHeight = 3.7;
@@ -422,11 +422,11 @@ function buildListadoPdfDoc(logoCanvas) {
     const start = page * rowsPerPage;
     const pageRows = rows.slice(start, start + rowsPerPage);
 
-    drawHeader(8);
-    drawInfoBlocks(31);
+    drawHeader(4);
+    drawInfoBlocks(27);
 
     drawTable(pageRows, start);
-    drawFooter(174);
+    drawFooter(176);
   }
 
   return doc;
