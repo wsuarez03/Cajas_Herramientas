@@ -178,7 +178,7 @@ const LISTADO_LOGO_CANDIDATES = [
   "./assets/logo.png"
 ];
 
-const LISTADO_FORMAT_VERSION_DATE = "27/01/2023";
+const LISTADO_FORMAT_VERSION_DATE = "2023-01-27";
 
 const listadoLogoState = {
   attempted: false,
@@ -223,11 +223,20 @@ function buildListadoPdfDoc(logoCanvas) {
   collectChecklistFromUI();
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-  const date = new Date().toLocaleString("es-CO");
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
+  const checklistDate = new Date().toISOString().slice(0, 10);
   const worker = box.workerName || "Sin propietario";
   const boxId = state.activeBoxId.toUpperCase();
   const rowsPerPage = 30;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const sheetLeft = 6;
+  const sheetWidth = pageWidth - (sheetLeft * 2);
+  const baseLeft = 10;
+  const baseWidth = 277;
+  const scaleX = sheetWidth / baseWidth;
+  const mapX = (oldX) => sheetLeft + ((oldX - baseLeft) * scaleX);
+  const mapW = (oldW) => oldW * scaleX;
+
   const rows = box.tools.map((tool, i) => ({
     index: i + 1,
     name: tool.name,
@@ -252,116 +261,115 @@ function buildListadoPdfDoc(logoCanvas) {
 
   const drawHeader = (yTop) => {
     doc.setLineWidth(0.3);
-    doc.rect(10, yTop, 277, 22);
+    doc.rect(sheetLeft, yTop, sheetWidth, 22);
 
     // Bloque logo (equivalente B2:C4) y bloque titulo (D2:R3).
-    doc.rect(10, yTop, 30, 22);
-    doc.rect(40, yTop, 247, 14);
+    doc.rect(sheetLeft, yTop, mapW(30), 22);
+    doc.rect(mapX(40), yTop, mapW(247), 14);
 
     // Fila inferior de metadatos (equivalente fila 4 con celdas separadas).
-    doc.rect(40, yTop + 14, 34, 8);
-    doc.rect(74, yTop + 14, 44, 8);
-    doc.rect(118, yTop + 14, 32, 8);
-    doc.rect(150, yTop + 14, 24, 8);
-    doc.rect(174, yTop + 14, 32, 8);
-    doc.rect(206, yTop + 14, 81, 8);
+    doc.rect(mapX(40), yTop + 14, mapW(34), 8);
+    doc.rect(mapX(74), yTop + 14, mapW(44), 8);
+    doc.rect(mapX(118), yTop + 14, mapW(32), 8);
+    doc.rect(mapX(150), yTop + 14, mapW(24), 8);
+    doc.rect(mapX(174), yTop + 14, mapW(32), 8);
+    doc.rect(mapX(206), yTop + 14, mapW(81), 8);
 
     if (logoCanvas) {
-      doc.addImage(logoCanvas, "PNG", 14, yTop + 3, 22, 16);
+      doc.addImage(logoCanvas, "PNG", mapX(14), yTop + 3, mapW(22), 16);
     } else {
       doc.setFontSize(7);
-      doc.text("LOGO", 25, yTop + 11, { align: "center" });
+      doc.text("LOGO", mapX(25), yTop + 11, { align: "center" });
     }
 
     doc.setFontSize(12);
     doc.setFont(undefined, "bold");
-    doc.text("INVENTARIO CAJAS DE HERRAMIENTAS MANUALES", 135, yTop + 9, { align: "center" });
+    doc.text("INVENTARIO CAJAS DE HERRAMIENTAS MANUALES", mapX(135), yTop + 9, { align: "center" });
     doc.setFontSize(8);
     doc.setFont(undefined, "normal");
-    doc.text("CODIGO", 57, yTop + 19, { align: "center" });
-    doc.text("OYS-FO-09", 96, yTop + 19, { align: "center" });
-    doc.text("VERSION", 134, yTop + 19, { align: "center" });
-    doc.text("01", 162, yTop + 19, { align: "center" });
-    doc.text("FECHA", 190, yTop + 19, { align: "center" });
-    doc.text(LISTADO_FORMAT_VERSION_DATE, 246.5, yTop + 19, { align: "center" });
+    doc.text("CODIGO", mapX(57), yTop + 19, { align: "center" });
+    doc.text("OYS-FO-09", mapX(96), yTop + 19, { align: "center" });
+    doc.text("VERSION", mapX(134), yTop + 19, { align: "center" });
+    doc.text("01", mapX(162), yTop + 19, { align: "center" });
+    doc.text("FECHA", mapX(190), yTop + 19, { align: "center" });
+    doc.text(LISTADO_FORMAT_VERSION_DATE, mapX(246.5), yTop + 19, { align: "center" });
   };
 
   const drawInfoBlocks = (yTop) => {
     doc.setLineWidth(0.25);
-    doc.rect(10, yTop, 277, 14);
-    doc.line(110, yTop, 110, yTop + 14);
-    doc.line(195, yTop, 195, yTop + 14);
+    doc.rect(sheetLeft, yTop, sheetWidth, 14);
+    doc.line(mapX(110), yTop, mapX(110), yTop + 14);
+    doc.line(mapX(195), yTop, mapX(195), yTop + 14);
 
     doc.setFontSize(8);
     doc.setFont(undefined, "bold");
-    doc.text("CAJA DE HERRAMIENTAS NUMERO", 12, yTop + 5.5);
-    doc.text("FECHA RECIBE", 112, yTop + 5.5);
-    doc.text("FECHA REGRESA", 197, yTop + 5.5);
+    doc.text("CAJA DE HERRAMIENTAS NUMERO", mapX(12), yTop + 5.5);
+    doc.text("FECHA RECIBE", mapX(112), yTop + 5.5);
+    doc.text("FECHA REGRESA", mapX(197), yTop + 5.5);
     doc.setFont(undefined, "normal");
     doc.setFontSize(10);
-    doc.text(boxId, 12, yTop + 11);
-    doc.text(date, 112, yTop + 11);
-    doc.text(date, 197, yTop + 11);
+    doc.text(boxId, mapX(12), yTop + 11);
+    doc.text(checklistDate, mapX(112), yTop + 11);
+    doc.text(checklistDate, mapX(197), yTop + 11);
 
-    doc.rect(10, yTop + 14, 277, 10);
-    doc.line(170, yTop + 14, 170, yTop + 24);
+    doc.rect(sheetLeft, yTop + 14, sheetWidth, 10);
+    doc.line(mapX(170), yTop + 14, mapX(170), yTop + 24);
     doc.setFontSize(8);
     doc.setFont(undefined, "bold");
-    doc.text("NOMBRE DEL TECNICO", 12, yTop + 20);
-    doc.text("IDENTIFICACION", 172, yTop + 20);
+    doc.text("NOMBRE DEL TECNICO", mapX(12), yTop + 20);
+    doc.text("IDENTIFICACION", mapX(172), yTop + 20);
     doc.setFont(undefined, "normal");
-    doc.text(fitText(worker, 112), 55, yTop + 20);
+    doc.text(fitText(worker, mapW(112)), mapX(55), yTop + 20);
   };
 
   const drawFooter = (yTop) => {
     doc.setLineWidth(0.25);
-    doc.rect(10, yTop, 277, 24);
-    doc.line(148.5, yTop, 148.5, yTop + 24);
-    doc.line(10, yTop + 5, 287, yTop + 5);
-    doc.line(10, yTop + 11, 287, yTop + 11);
-    doc.line(79, yTop + 5, 79, yTop + 24);
-    doc.line(148.5 - 69, yTop + 5, 148.5 - 69, yTop + 24);
-    doc.line(217.5, yTop + 5, 217.5, yTop + 24);
+    doc.rect(sheetLeft, yTop, sheetWidth, 24);
+    doc.line(mapX(148.5), yTop, mapX(148.5), yTop + 24);
+    doc.line(sheetLeft, yTop + 5, sheetLeft + sheetWidth, yTop + 5);
+    doc.line(sheetLeft, yTop + 11, sheetLeft + sheetWidth, yTop + 11);
+    doc.line(mapX(79.25), yTop + 5, mapX(79.25), yTop + 24);
+    doc.line(mapX(217.75), yTop + 5, mapX(217.75), yTop + 24);
 
     doc.setFontSize(8);
     doc.setFont(undefined, "bold");
-    doc.text("SALIDA", 79, yTop + 3.8, { align: "center" });
-    doc.text("REGRESO", 218, yTop + 3.8, { align: "center" });
-    doc.text("ENTREGA", 44.5, yTop + 9, { align: "center" });
-    doc.text("RECIBE", 113.5, yTop + 9, { align: "center" });
-    doc.text("ENTREGA", 183, yTop + 9, { align: "center" });
-    doc.text("RECIBE", 252, yTop + 9, { align: "center" });
+    doc.text("SALIDA", mapX(79), yTop + 3.8, { align: "center" });
+    doc.text("REGRESO", mapX(218), yTop + 3.8, { align: "center" });
+    doc.text("ENTREGA", mapX(44.5), yTop + 9, { align: "center" });
+    doc.text("RECIBE", mapX(113.5), yTop + 9, { align: "center" });
+    doc.text("ENTREGA", mapX(183), yTop + 9, { align: "center" });
+    doc.text("RECIBE", mapX(252), yTop + 9, { align: "center" });
 
     doc.setFont(undefined, "normal");
-    doc.text("NOMBRE", 44.5, yTop + 15, { align: "center" });
-    doc.text("NOMBRE", 113.5, yTop + 15, { align: "center" });
-    doc.text("NOMBRE", 183, yTop + 15, { align: "center" });
-    doc.text("NOMBRE", 252, yTop + 15, { align: "center" });
-    doc.text("FIRMA", 44.5, yTop + 21, { align: "center" });
-    doc.text("FIRMA", 113.5, yTop + 21, { align: "center" });
-    doc.text("FIRMA", 183, yTop + 21, { align: "center" });
-    doc.text("FIRMA", 252, yTop + 21, { align: "center" });
+    doc.text("NOMBRE", mapX(44.5), yTop + 15, { align: "center" });
+    doc.text("NOMBRE", mapX(113.5), yTop + 15, { align: "center" });
+    doc.text("NOMBRE", mapX(183), yTop + 15, { align: "center" });
+    doc.text("NOMBRE", mapX(252), yTop + 15, { align: "center" });
+    doc.text("FIRMA", mapX(44.5), yTop + 21, { align: "center" });
+    doc.text("FIRMA", mapX(113.5), yTop + 21, { align: "center" });
+    doc.text("FIRMA", mapX(183), yTop + 21, { align: "center" });
+    doc.text("FIRMA", mapX(252), yTop + 21, { align: "center" });
 
-    doc.rect(10, yTop + 24, 277, 8);
+    doc.rect(sheetLeft, yTop + 24, sheetWidth, 8);
     doc.setFont(undefined, "bold");
-    doc.text("OBSERVACIONES:", 12, yTop + 29);
+    doc.text("OBSERVACIONES:", mapX(12), yTop + 29);
     doc.setFont(undefined, "normal");
     if (box.generalNotes) {
-      const notesLine = doc.splitTextToSize(box.generalNotes, 240).slice(0, 1);
-      doc.text(notesLine, 45, yTop + 29);
+      const notesLine = doc.splitTextToSize(box.generalNotes, mapW(240)).slice(0, 1);
+      doc.text(notesLine, mapX(45), yTop + 29);
     }
   };
 
   const drawTable = (pageRows, start) => {
-    const x = 10;
+    const x = sheetLeft;
     const y = 56;
-    const tableWidth = 277;
-    const headerHeight = 4;
-    const rowHeight = 3.2;
+    const tableWidth = sheetWidth;
+    const headerHeight = 5;
+    const rowHeight = 3.7;
     const totalRowsHeight = rowHeight * rowsPerPage;
     const tableHeight = headerHeight + totalRowsHeight;
     // Proporcion calculada de columnas B:R del formato Excel.
-    const colWidths = [14.2, 173.9, 34.6, 20.6, 33.7];
+    const colWidths = [14.2, 173.9, 34.6, 20.6, 33.7].map((w) => w * scaleX);
     const colX = [x];
 
     for (let i = 0; i < colWidths.length; i++) {
@@ -381,24 +389,24 @@ function buildListadoPdfDoc(logoCanvas) {
       doc.line(x, yLine, x + tableWidth, yLine);
     }
 
-    doc.setFontSize(7.2);
+    doc.setFontSize(8.2);
     doc.setFont(undefined, "bold");
-    doc.text("ITEM", x + (colWidths[0] / 2), y + 2.9, { align: "center" });
-    doc.text("DESCRIPCION", colX[1] + (colWidths[1] / 2), y + 2.9, { align: "center" });
-    doc.text("CANTIDAD", colX[2] + (colWidths[2] / 2), y + 2.9, { align: "center" });
-    doc.text("RECIBE", colX[3] + (colWidths[3] / 2), y + 2.9, { align: "center" });
-    doc.text("REGRESA", colX[4] + (colWidths[4] / 2), y + 2.9, { align: "center" });
+    doc.text("ITEM", x + (colWidths[0] / 2), y + 3.5, { align: "center" });
+    doc.text("DESCRIPCION", colX[1] + (colWidths[1] / 2), y + 3.5, { align: "center" });
+    doc.text("CANTIDAD", colX[2] + (colWidths[2] / 2), y + 3.5, { align: "center" });
+    doc.text("RECIBE", colX[3] + (colWidths[3] / 2), y + 3.5, { align: "center" });
+    doc.text("REGRESA", colX[4] + (colWidths[4] / 2), y + 3.5, { align: "center" });
 
     doc.setFont(undefined, "normal");
-    doc.setFontSize(6.6);
+    doc.setFontSize(7.4);
     for (let i = 0; i < rowsPerPage; i++) {
       const row = pageRows[i];
-      const yText = y + headerHeight + (i * rowHeight) + 2.4;
+      const yText = y + headerHeight + (i * rowHeight) + 2.9;
       const itemNumber = row ? row.index : (start + i + 1);
-      const description = row ? fitText(row.name, colWidths[1] - 2) : "";
+      const description = row ? fitText(row.name, colWidths[1] - 2.5) : "";
       const qty = row ? row.quantity : "";
-      const recibe = row ? fitText(row.recibe, colWidths[3] - 2) : "";
-      const regresa = row ? fitText(row.regresa, colWidths[4] - 2) : "";
+      const recibe = row ? fitText(row.recibe, colWidths[3] - 2.5) : "";
+      const regresa = row ? fitText(row.regresa, colWidths[4] - 2.5) : "";
 
       doc.text(String(itemNumber), x + (colWidths[0] / 2), yText, { align: "center" });
       doc.text(description, colX[1] + 1, yText);
@@ -418,7 +426,7 @@ function buildListadoPdfDoc(logoCanvas) {
     drawInfoBlocks(31);
 
     drawTable(pageRows, start);
-    drawFooter(158);
+    drawFooter(174);
   }
 
   return doc;
